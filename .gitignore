@@ -1,0 +1,28 @@
+# Node modules
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+dist/
+build/
+
+# Vite cache
+.vite/
+
+# dotenv environment variables
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Express session files (if any)
+sessions/
+
+# VSCode settings
+.vscode/

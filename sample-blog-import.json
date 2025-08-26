@@ -1,0 +1,21 @@
+[
+  {
+    "title": "Sample Blog Post 1",
+    "content": "# Sample Blog Post 1\n\nThis is a sample blog post created from JSON import.\n\n## Features\n\n- **Markdown support**\n- *Italic text*\n- [Links](https://example.com)\n- Lists and more\n\n## Code Example\n\n```javascript\nconsole.log('Hello, World!');\n```",
+    "excerpt": "This is a sample blog post created from JSON import with full markdown support.",
+    "status": "DRAFT",
+    "metaTitle": "Sample Blog Post 1 - FitFlix",
+    "metaDescription": "A sample blog post demonstrating JSON import functionality",
+    "metaKeywords": "sample, blog, json, import, markdown"
+  },
+  {
+    "title": "Sample Blog Post 2",
+    "content": "# Sample Blog Post 2\n\nAnother sample blog post for testing.\n\n## Benefits\n\n1. Easy bulk import\n2. Automatic slug generation\n3. SEO metadata support\n4. Status management",
+    "excerpt": "Another sample blog post demonstrating the bulk import feature.",
+    "status": "DRAFT",
+    "coverImage": "https://example.com/image2.jpg",
+    "metaTitle": "Sample Blog Post 2 - FitFlix",
+    "metaDescription": "Testing the bulk import functionality with multiple blog posts",
+    "metaKeywords": "bulk import, testing, functionality"
+  }
+]

@@ -1,5 +1,8 @@
 import React from 'react';
-import { Menu, Bell, Search, Menu as MenuIcon } from 'lucide-react';
+import { Menu, Bell, Search, Menu as MenuIcon, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { authService } from '@/services/auth';
+import { toast } from 'sonner';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -8,9 +11,17 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen, userType }) => {
+  const navigate = useNavigate();
+  
   const bgGradient = userType === 'admin' 
     ? 'from-blue-600 to-blue-700' 
     : 'from-cyan-600 to-blue-600';
+
+  const handleLogout = () => {
+    authService.logout();
+    toast.success('Logged out successfully');
+    navigate('/login');
+  };
 
   return (
     <header className={`bg-gradient-to-r ${bgGradient} shadow-lg z-10`}>
@@ -43,6 +54,14 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen, userType }
               className="p-2 rounded-lg text-white hover:text-gray-200 hover:bg-white/10 focus:outline-none transition-all duration-200"
             >
               <Bell className="h-6 w-6" />
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="p-2 rounded-lg text-white hover:text-gray-200 hover:bg-white/10 focus:outline-none transition-all duration-200"
+              title="Logout"
+            >
+              <LogOut className="h-6 w-6" />
             </button>
             <div className="relative">
               <button

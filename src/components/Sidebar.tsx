@@ -2,18 +2,10 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  Ticket,
-  Users,
-  UserCheck,
-  Target,
-  CreditCard,
-  Settings,
   X,
   Dumbbell as GymLogo,
-  Building,
-  DollarSign,
   UserPlus,
-  ClipboardCheck
+  FileText
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -25,21 +17,13 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, userType }) => {
   const adminNavItems = [
     { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
-    { to: '/admin/tickets', icon: Ticket, label: 'Tickets' },
     { to: '/admin/leads', icon: UserPlus, label: 'Leads' },
-    { to: '/admin/user-management', icon: Users, label: 'User Management' },
-    { to: '/admin/gym-management', icon: Building, label: 'Gym Management' },
-    { to: '/admin/revenue', icon: DollarSign, label: 'Revenue' },
+    { to: '/admin/blogs', icon: FileText, label: 'Blog Management' },
   ];
 
   const frontdeskNavItems = [
     { to: '/frontdesk', icon: LayoutDashboard, label: 'Dashboard', end: true },
-    { to: '/frontdesk/tickets', icon: Ticket, label: 'Tickets' },
     { to: '/frontdesk/leads', icon: UserPlus, label: 'Leads' },
-    { to: '/frontdesk/customers', icon: Users, label: 'Present Customers' },
-    { to: '/frontdesk/check-ins', icon: ClipboardCheck, label: 'Check Ins' },
-    { to: '/frontdesk/targets', icon: Target, label: 'Targets' },
-    { to: '/frontdesk/membership', icon: CreditCard, label: 'Membership Renewal' },
   ];
 
   const navItems = userType === 'admin' ? adminNavItems : frontdeskNavItems;

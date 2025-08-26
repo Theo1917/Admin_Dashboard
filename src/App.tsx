@@ -1,15 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import Login from './pages/Login';
 import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
-import AdminTickets from './pages/admin/Tickets';
 import AdminLeads from './pages/admin/Leads';
-import AdminUserManagement from './pages/admin/UserManagement';
-import AdminGymManagement from './pages/admin/GymManagement';
-import AdminRevenue from './pages/admin/Revenue';
+import AdminBlogManagement from './pages/admin/BlogManagement';
 
 // Front Desk Pages
 import FrontDeskDashboard from './pages/frontdesk/Dashboard';
@@ -22,22 +21,33 @@ import FrontDeskMembership from './pages/frontdesk/Membership';
 
 function App() {
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }}
+    >
+      <Toaster position="top-right" />
       <Routes>
         <Route path="/login" element={<Login />} />
         
         {/* Admin Routes */}
-        <Route path="/admin" element={<Layout userType="admin" />}>
+        <Route path="/admin" element={
+          <ProtectedRoute requireAdmin={true}>
+            <Layout userType="admin" />
+          </ProtectedRoute>
+        }>
           <Route index element={<AdminDashboard />} />
-          <Route path="tickets" element={<AdminTickets />} />
           <Route path="leads" element={<AdminLeads />} />
-          <Route path="user-management" element={<AdminUserManagement />} />
-          <Route path="gym-management" element={<AdminGymManagement />} />
-          <Route path="revenue" element={<AdminRevenue />} />
+          <Route path="blogs" element={<AdminBlogManagement />} />
         </Route>
 
         {/* Front Desk Routes */}
-        <Route path="/frontdesk" element={<Layout userType="frontdesk" />}>
+        <Route path="/frontdesk" element={
+          <ProtectedRoute>
+            <Layout userType="frontdesk" />
+          </ProtectedRoute>
+        }>
           <Route index element={<FrontDeskDashboard />} />
           <Route path="tickets" element={<FrontDeskTickets />} />
           <Route path="leads" element={<FrontDeskLeads />} />
@@ -48,7 +58,7 @@ function App() {
         </Route>
 
         {/* Redirect root to login */}
-        <Route path="/" element={<Navigate to="/login\" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
