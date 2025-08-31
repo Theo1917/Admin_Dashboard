@@ -10,7 +10,8 @@ export interface Blog {
   excerpt?: string;
   content: string;
   coverImage?: string;
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  status: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED' | 'ARCHIVED';
+  scheduledPublishAt?: string;
   metaTitle?: string;
   metaDescription?: string;
   metaKeywords?: string;
@@ -18,10 +19,8 @@ export interface Blog {
   updatedAt?: string;
   author: {
     username: string;
-    user_profiles?: {
-      first_name?: string;
-      last_name?: string;
-    };
+    firstName?: string;
+    lastName?: string;
   };
 }
 
@@ -31,7 +30,8 @@ export interface CreateBlogData {
   excerpt?: string;
   content: string;
   coverImage?: string;
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  status: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED' | 'ARCHIVED';
+  scheduledPublishAt?: string;
   metaTitle?: string;
   metaDescription?: string;
   metaKeywords?: string;
@@ -108,6 +108,31 @@ class ApiClient {
     });
   }
 
+  async scheduleBlog(id: string, scheduledPublishAt: string): Promise<Blog> {
+    return this.request<Blog>(`/blogs/${id}/schedule`, {
+      method: 'PATCH',
+      body: JSON.stringify({ scheduledPublishAt }),
+    });
+  }
+
+  async unscheduleBlog(id: string): Promise<Blog> {
+    return this.request<Blog>(`/blogs/${id}/unschedule`, {
+      method: 'PATCH',
+    });
+  }
+
+  async publishBlog(id: string): Promise<Blog> {
+    return this.request<Blog>(`/blogs/${id}/publish`, {
+      method: 'PATCH',
+    });
+  }
+
+  async saveAsDraft(id: string): Promise<Blog> {
+    return this.request<Blog>(`/blogs/${id}/draft`, {
+      method: 'PATCH',
+    });
+  }
+
   // Published blogs (for public website)
   async getPublishedBlogs(): Promise<{ blogs: Blog[]; total: number }> {
     return this.request<{ blogs: Blog[]; total: number }>('/blogs/published');
@@ -130,4 +155,8 @@ export const blogApi = {
   delete: (id: string) => apiClient.deleteBlog(id),
   getPublished: () => apiClient.getPublishedBlogs(),
   getBySlug: (slug: string) => apiClient.getBlogBySlug(slug),
+  schedule: (id: string, scheduledPublishAt: string) => apiClient.scheduleBlog(id, scheduledPublishAt),
+  unschedule: (id: string) => apiClient.unscheduleBlog(id),
+  publish: (id: string) => apiClient.publishBlog(id),
+  saveAsDraft: (id: string) => apiClient.saveAsDraft(id),
 };

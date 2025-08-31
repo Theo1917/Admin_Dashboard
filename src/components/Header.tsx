@@ -8,9 +8,10 @@ interface HeaderProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   userType: 'admin' | 'frontdesk';
+  isCollapsed: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen, userType }) => {
+const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen, userType, isCollapsed }) => {
   const navigate = useNavigate();
   
   const bgGradient = userType === 'admin' 

@@ -10,6 +10,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminLeads from './pages/admin/Leads';
 import AdminBlogManagement from './pages/admin/BlogManagement';
 
+
 // Front Desk Pages
 import FrontDeskDashboard from './pages/frontdesk/Dashboard';
 import FrontDeskTickets from './pages/frontdesk/Tickets';
@@ -40,6 +41,7 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="leads" element={<AdminLeads />} />
           <Route path="blogs" element={<AdminBlogManagement />} />
+
         </Route>
 
         {/* Front Desk Routes */}

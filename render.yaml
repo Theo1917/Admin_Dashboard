@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: fitflix-admin-dashboard
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm run preview -- --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    autoDeploy: true
+    pullRequestPreviewsEnabled: true
+    
+    envVars:
+      - key: NODE_ENV
+        value: "production"
+      - key: PORT
+        value: "10000"
+      - key: NODE_VERSION
+        value: "18"
+      - key: VITE_API_BASE_URL
+        value: "https://fitflix-backend-api.onrender.com"
+      - key: VITE_ADMIN_DASHBOARD_URL
+        value: "https://fitflix-admin-dashboard.onrender.com"

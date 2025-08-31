@@ -29,7 +29,8 @@ interface BlogFormData {
   excerpt: string;
   content: string;
   coverImage: string;
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  status: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED' | 'ARCHIVED';
+  scheduledPublishAt: string;
   metaTitle: string;
   metaDescription: string;
   metaKeywords: string;
@@ -302,6 +303,7 @@ const BlogForm = ({ blog, onSubmit, onCancel, isEditing = false }: {
     content: blog?.content || '',
     coverImage: blog?.coverImage || '',
     status: blog?.status || 'DRAFT',
+    scheduledPublishAt: blog?.scheduledPublishAt || '',
     metaTitle: blog?.metaTitle || '',
     metaDescription: blog?.metaDescription || '',
     metaKeywords: blog?.metaKeywords || ''
@@ -402,17 +404,40 @@ const BlogForm = ({ blog, onSubmit, onCancel, isEditing = false }: {
 
       <div className="space-y-2">
         <label className="text-sm font-medium text-slate-700">Status</label>
-        <Select value={formData.status} onValueChange={(value: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED') => setFormData(prev => ({ ...prev, status: value }))}>
+        <Select value={formData.status} onValueChange={(value: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED' | 'ARCHIVED') => setFormData(prev => ({ ...prev, status: value }))}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="DRAFT">Draft</SelectItem>
+            <SelectItem value="SCHEDULED">Scheduled</SelectItem>
             <SelectItem value="PUBLISHED">Published</SelectItem>
             <SelectItem value="ARCHIVED">Archived</SelectItem>
           </SelectContent>
         </Select>
       </div>
+
+      {formData.status === 'SCHEDULED' && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700">Schedule Publication</label>
+          <Input
+            type="datetime-local"
+            value={formData.scheduledPublishAt ? new Date(formData.scheduledPublishAt).toISOString().slice(0, 16) : ''}
+            min={new Date().toISOString().slice(0, 16)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              if (e.target.value) {
+                // Convert datetime-local to ISO string for storage
+                const scheduledDate = new Date(e.target.value);
+                setFormData(prev => ({ ...prev, scheduledPublishAt: scheduledDate.toISOString() }));
+              } else {
+                setFormData(prev => ({ ...prev, scheduledPublishAt: '' }));
+              }
+            }}
+            required={formData.status === 'SCHEDULED'}
+          />
+          <p className="text-sm text-slate-500">Set when this blog should be published automatically</p>
+        </div>
+      )}
 
       <MarkdownEditor
         value={formData.content}
@@ -481,7 +506,22 @@ const BlogManagement = () => {
         setLoading(true);
         const response = await blogApi.getAll();
         console.log('Blogs loaded:', response.blogs); // Debug log
-        setBlogs(response.blogs);
+        
+        // Validate blog data structure
+        const validBlogs = response.blogs.filter(blog => {
+          if (!blog || typeof blog !== 'object') {
+            console.warn('Invalid blog object:', blog);
+            return false;
+          }
+          if (!blog.id || !blog.title) {
+            console.warn('Blog missing required fields:', blog);
+            return false;
+          }
+          return true;
+        });
+        
+        console.log('Valid blogs:', validBlogs);
+        setBlogs(validBlogs);
       } catch (error) {
         console.error('Failed to load blogs:', error);
         toast.error('Failed to load blogs. Please try again.');
@@ -558,6 +598,43 @@ const BlogManagement = () => {
     }
   };
 
+  const handleScheduleBlog = async (blogId: string, scheduledTime: string) => {
+    try {
+      console.log('Scheduling blog:', blogId, 'with time:', scheduledTime);
+      
+      // Convert datetime-local to ISO string
+      const scheduledDate = new Date(scheduledTime);
+      const isoString = scheduledDate.toISOString();
+      console.log('Converted to ISO:', isoString);
+      
+      const updatedBlog = await blogApi.schedule(blogId, isoString);
+      
+      setBlogs(prev => prev.map(blog => 
+        blog.id === blogId ? updatedBlog : blog
+      ));
+      
+      toast.success('Blog scheduled successfully!');
+    } catch (error) {
+      console.error('Failed to schedule blog:', error);
+      toast.error('Failed to schedule blog');
+    }
+  };
+
+  const handleUnscheduleBlog = async (blogId: string) => {
+    try {
+      const updatedBlog = await blogApi.unschedule(blogId);
+      
+      setBlogs(prev => prev.map(blog => 
+        blog.id === blogId ? updatedBlog : blog
+      ));
+      
+      toast.success('Blog unscheduled successfully!');
+    } catch (error) {
+      console.error('Failed to unschedule blog:', error);
+      toast.error('Failed to unschedule blog');
+    }
+  };
+
   const handleBulkImport = async (blogs: CreateBlogData[]) => {
     try {
       setLoading(true);
@@ -586,6 +663,9 @@ const BlogManagement = () => {
   };
 
   const filteredBlogs = blogs.filter(blog => {
+    // Add null checks for blog properties
+    if (!blog || !blog.title) return false;
+    
     const matchesSearch = blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (blog.excerpt?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || blog.status === statusFilter;
@@ -595,6 +675,7 @@ const BlogManagement = () => {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
       DRAFT: 'bg-yellow-100 text-yellow-800',
+      SCHEDULED: 'bg-blue-100 text-blue-800',
       PUBLISHED: 'bg-green-100 text-green-800',
       ARCHIVED: 'bg-slate-100 text-slate-800'
     };
@@ -660,6 +741,7 @@ const BlogManagement = () => {
                 <SelectContent>
                   <SelectItem value="ALL">All Status</SelectItem>
                   <SelectItem value="DRAFT">Draft</SelectItem>
+                  <SelectItem value="SCHEDULED">Scheduled</SelectItem>
                   <SelectItem value="PUBLISHED">Published</SelectItem>
                   <SelectItem value="ARCHIVED">Archived</SelectItem>
                 </SelectContent>
@@ -684,8 +766,14 @@ const BlogManagement = () => {
 
       {/* Blog List */}
       <div className="grid gap-6">
-        {filteredBlogs.map((blog) => (
-          <Card key={blog.id} className="hover:shadow-md transition-shadow">
+        {filteredBlogs.map((blog) => {
+          // Skip rendering if blog is missing required properties
+          if (!blog || !blog.id || !blog.title) {
+            return null;
+          }
+          
+          return (
+            <Card key={blog.id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -705,6 +793,56 @@ const BlogManagement = () => {
                       ));
                     }}
                   />
+
+                  {/* Scheduling Actions for Draft Blogs */}
+                  {blog.status === 'DRAFT' && (
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-slate-700">Schedule for publication:</span>
+                        <Input
+                          type="datetime-local"
+                          className="w-48"
+                          min={new Date().toISOString().slice(0, 16)}
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              // Convert datetime-local to ISO string
+                              const scheduledDate = new Date(e.target.value);
+                              handleScheduleBlog(blog.id, scheduledDate.toISOString());
+                            }
+                          }}
+                        />
+                        <Button 
+                          size="sm"
+                          onClick={() => {
+                            const now = new Date();
+                            now.setHours(now.getHours() + 1);
+                            handleScheduleBlog(blog.id, now.toISOString());
+                          }}
+                        >
+                          Schedule in 1 hour
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Scheduled Blog Info */}
+                  {blog.status === 'SCHEDULED' && blog.scheduledPublishAt && (
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-blue-600">
+                          <Calendar className="h-3 w-3 inline mr-1" />
+                          Scheduled to publish on {new Date(blog.scheduledPublishAt).toLocaleDateString()} at {new Date(blog.scheduledPublishAt).toLocaleTimeString()}
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleUnscheduleBlog(blog.id)}
+                        >
+                          Unschedule
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="flex items-center space-x-4 text-sm text-slate-500 mt-3">
                     <div className="flex items-center space-x-1">
@@ -754,7 +892,8 @@ const BlogManagement = () => {
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       {/* Create/Edit Blog Dialog */}
