@@ -1,6 +1,10 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:3000/api';
-import { authService } from './auth';
+const RAW_API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000';
+const normalizeApiBase = (url: string) => {
+  const trimmed = url.replace(/\/+$/, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+};
+const API_BASE_URL = normalizeApiBase(RAW_API_BASE_URL);
 
 // Types
 export interface Blog {
@@ -17,11 +21,7 @@ export interface Blog {
   metaKeywords?: string;
   createdAt: string;
   updatedAt?: string;
-  author: {
-    username: string;
-    firstName?: string;
-    lastName?: string;
-  };
+  publishedAt?: string;
 }
 
 export interface CreateBlogData {
@@ -58,10 +58,9 @@ class ApiClient {
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
-        ...authService.getAuthHeaders(),
         ...options.headers,
       },
-      credentials: 'include', // Include cookies for JWT authentication
+      credentials: 'include',
       ...options,
     };
 
@@ -135,7 +134,7 @@ class ApiClient {
 
   // Published blogs (for public website)
   async getPublishedBlogs(): Promise<{ blogs: Blog[]; total: number }> {
-    return this.request<{ blogs: Blog[]; total: number }>('/blogs/published');
+    return this.request<{ blogs: Blog[]; total: number }>('/blogs/status/PUBLISHED');
   }
 
   async getBlogBySlug(slug: string): Promise<Blog> {

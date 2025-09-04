@@ -5,20 +5,10 @@ import Login from './pages/Login';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Admin Pages
-import AdminDashboard from './pages/admin/Dashboard';
-import AdminLeads from './pages/admin/Leads';
-import AdminBlogManagement from './pages/admin/BlogManagement';
-
-
-// Front Desk Pages
-import FrontDeskDashboard from './pages/frontdesk/Dashboard';
-import FrontDeskTickets from './pages/frontdesk/Tickets';
-import FrontDeskLeads from './pages/frontdesk/Leads';
-import FrontDeskCustomers from './pages/frontdesk/Customers';
-import FrontDeskCheckIns from './pages/frontdesk/CheckIns';
-import FrontDeskTargets from './pages/frontdesk/Targets';
-import FrontDeskMembership from './pages/frontdesk/Membership';
+// Admin Pages - Only Leads and Blogs
+import Dashboard from './pages/Dashboard';
+import Leads from './pages/Leads';
+import Blogs from './pages/Blogs';
 
 function App() {
   return (
@@ -32,35 +22,19 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         
-        {/* Admin Routes */}
-        <Route path="/admin" element={
+        {/* Admin Routes - Simplified */}
+        <Route path="/" element={
           <ProtectedRoute requireAdmin={true}>
-            <Layout userType="admin" />
+            <Layout />
           </ProtectedRoute>
         }>
-          <Route index element={<AdminDashboard />} />
-          <Route path="leads" element={<AdminLeads />} />
-          <Route path="blogs" element={<AdminBlogManagement />} />
-
+          <Route index element={<Dashboard />} />
+          <Route path="leads" element={<Leads />} />
+          <Route path="blogs" element={<Blogs />} />
         </Route>
 
-        {/* Front Desk Routes */}
-        <Route path="/frontdesk" element={
-          <ProtectedRoute>
-            <Layout userType="frontdesk" />
-          </ProtectedRoute>
-        }>
-          <Route index element={<FrontDeskDashboard />} />
-          <Route path="tickets" element={<FrontDeskTickets />} />
-          <Route path="leads" element={<FrontDeskLeads />} />
-          <Route path="customers" element={<FrontDeskCustomers />} />
-          <Route path="check-ins" element={<FrontDeskCheckIns />} />
-          <Route path="targets" element={<FrontDeskTargets />} />
-          <Route path="membership" element={<FrontDeskMembership />} />
-        </Route>
-
-        {/* Redirect root to login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* Redirect any other routes to dashboard */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
