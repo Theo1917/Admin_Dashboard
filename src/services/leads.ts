@@ -1,5 +1,10 @@
 // Leads API Configuration
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const RAW_API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000';
+const normalizeApiBase = (url: string) => {
+  const trimmed = url.replace(/\/+$/, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+};
+const API_BASE_URL = normalizeApiBase(RAW_API_BASE_URL);
 
 // Types
 export interface Lead {
@@ -10,7 +15,7 @@ export interface Lead {
   location?: string;
   source: string;
   interest?: string;
-  status: 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'CONVERTED' | 'LOST';
+  status: 'NEW' | 'CONTACTED' | 'INTERESTED' | 'CONVERTED' | 'LOST';
   notes?: string;
   createdAt: string;
   updatedAt: string;

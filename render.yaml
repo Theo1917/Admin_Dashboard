@@ -17,6 +17,6 @@ services:
       - key: NODE_VERSION
         value: "18"
       - key: VITE_API_BASE_URL
-        value: "https://fitflix-backend-api.onrender.com"
+        value: "https://fitflix-backend-avxt.onrender.com"
       - key: VITE_ADMIN_DASHBOARD_URL
         value: "https://fitflix-admin-dashboard.onrender.com"

@@ -11,7 +11,7 @@ interface Lead {
   location?: string;
   source: string;
   interest?: string;
-  status: 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'CONVERTED' | 'LOST';
+  status: 'NEW' | 'CONTACTED' | 'INTERESTED' | 'CONVERTED' | 'LOST';
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -81,7 +81,7 @@ const Leads: React.FC = () => {
     const colors = {
       NEW: 'bg-blue-100 text-blue-800',
       CONTACTED: 'bg-yellow-100 text-yellow-800',
-      QUALIFIED: 'bg-purple-100 text-purple-800',
+      INTERESTED: 'bg-purple-100 text-purple-800',
       CONVERTED: 'bg-green-100 text-green-800',
       LOST: 'bg-red-100 text-red-800',
     };
@@ -155,7 +155,7 @@ const Leads: React.FC = () => {
                 <option value="all">All Statuses</option>
                 <option value="NEW">New</option>
                 <option value="CONTACTED">Contacted</option>
-                <option value="QUALIFIED">Qualified</option>
+                <option value="INTERESTED">Qualified</option>
                 <option value="CONVERTED">Converted</option>
                 <option value="LOST">Lost</option>
               </select>
@@ -255,7 +255,7 @@ const Leads: React.FC = () => {
                     >
                       <option value="NEW">New</option>
                       <option value="CONTACTED">Contacted</option>
-                      <option value="QUALIFIED">Qualified</option>
+                      <option value="INTERESTED">Qualified</option>
                       <option value="CONVERTED">Converted</option>
                       <option value="LOST">Lost</option>
                     </select>

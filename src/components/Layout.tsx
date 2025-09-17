@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Users, FileText, BarChart3 } from 'lucide-react';
+import { LogOut, Users, FileText, BarChart3, Calendar } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { leadApi } from '../services/leads';
 import { authService } from '../services/auth';
@@ -33,6 +33,7 @@ const Layout: React.FC = () => {
     { name: 'Dashboard', href: '/', icon: BarChart3 },
     { name: 'Leads', href: '/leads', icon: Users },
     { name: 'Blogs', href: '/blogs', icon: FileText },
+    { name: 'Events', href: '/events', icon: Calendar },
   ];
 
   return (
