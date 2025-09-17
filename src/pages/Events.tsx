@@ -23,7 +23,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { 
@@ -326,9 +326,13 @@ const Events: React.FC = () => {
       if (typeof raw === 'string') {
         try { blocks = JSON.parse(raw); } catch { /* keep as string */ }
       }
-      if (!blocks) return undefined;
+      if (!blocks) {
+        console.log('📝 No description blocks found');
+        return undefined;
+      }
       if (Array.isArray(blocks)) {
-        return blocks.map((b: unknown) => {
+        console.log('📝 Processing description blocks:', blocks.length, 'items');
+        const normalized = blocks.map((b: unknown) => {
           if (typeof b === 'string') {
             return { title: b } as DescriptionBlock;
           }
@@ -341,11 +345,16 @@ const Events: React.FC = () => {
           } else if (typeof obj?.items === 'string') {
             items = obj.items.split('\n').map((s: string) => s.trim()).filter(Boolean);
           }
-          return { title, description, items } as DescriptionBlock;
+          const block = { title, description, items } as DescriptionBlock;
+          console.log('📝 Normalized block:', { title, hasDescription: !!description, itemsCount: items?.length || 0 });
+          return block;
         }).filter((b) => b.title || (b.items && b.items.length) || b.description);
+        console.log('📝 Final normalized blocks:', normalized.length, 'valid blocks');
+        return normalized;
       }
       return undefined;
-    } catch {
+    } catch (error) {
+      console.error('📝 Error normalizing blocks:', error);
       return undefined;
     }
   };
@@ -387,33 +396,89 @@ const Events: React.FC = () => {
     // description
     const desc = getUnknown(raw, 'description') ?? getUnknown(raw, 'excerpt') ?? '';
     e.description = typeof desc === 'string' ? desc : coerceString(desc);
-    // date
+    
+    // date - ensure it's in the future
     const dateVal = getUnknown(raw, 'date') ?? getUnknown(raw, 'datetime') ?? getUnknown(raw, 'eventDate');
     const iso = toIsoDate(dateVal);
-    if (iso) e.date = iso;
+    if (iso) {
+      const eventDate = new Date(iso);
+      const now = new Date();
+      // If date is in the past, adjust it to future
+      if (eventDate <= now) {
+        const futureDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Add 1 day
+        console.log(`⚠️ Date ${iso} is in the past, adjusting to ${futureDate.toISOString()}`);
+        e.date = futureDate.toISOString();
+      } else {
+        e.date = iso;
+      }
+    }
+    
     // status
     const status = String((getString(raw, 'status') ?? 'DRAFT')).toUpperCase();
     e.status = isEventStatus(status) ? status : 'DRAFT';
+    
     // entryFee
     const feeNum = getNumber(raw, 'entryFee');
     if (feeNum !== undefined) e.entryFee = feeNum;
+    
     // location
     const loc = getString(raw, 'location');
     if (loc) e.location = loc;
-    // coverImage
+    
+    // coverImage - validate URL format
     const cover = getString(raw, 'coverImage') ?? getString(raw, 'image');
-    if (cover) e.coverImage = cover;
-    // imageUrls
+    if (cover && (cover.startsWith('http://') || cover.startsWith('https://'))) {
+      e.coverImage = cover;
+    } else if (cover) {
+      console.log(`⚠️ Invalid cover image URL: ${cover}, skipping`);
+    }
+    
+    // imageUrls - validate URL format
     const imagesArray = getUnknownArray(raw, 'imageUrls');
     const imagesStr = getString(raw, 'imageUrls');
+    let validImageUrls: string[] = [];
+    
     if (imagesArray) {
-      e.imageUrls = imagesArray.map((u: unknown) => String(u)).filter(Boolean);
+      validImageUrls = imagesArray
+        .map((u: unknown) => String(u))
+        .filter(url => url && (url.startsWith('http://') || url.startsWith('https://')));
     } else if (imagesStr) {
-      e.imageUrls = imagesStr.split(',').map((s: string) => s.trim()).filter(Boolean);
+      validImageUrls = imagesStr
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(url => url && (url.startsWith('http://') || url.startsWith('https://')));
     }
-    // descriptionBlocks
+    
+    if (validImageUrls.length > 0) {
+      e.imageUrls = validImageUrls;
+    }
+    
+    // descriptionBlocks - convert frontend format to backend format
     const blocks = normalizeBlocks(getUnknown(raw, 'descriptionBlocks') ?? getUnknown(raw, 'blocks') ?? getUnknown(raw, 'sections'));
-    if (blocks && blocks.length) e.descriptionBlocks = blocks;
+    if (blocks && blocks.length) {
+      // Convert frontend DescriptionBlock format to backend structuredBlockSchema format
+      const backendBlocks = blocks.map(block => {
+        let description = block.description || '';
+        
+        // If there are items, convert them to a formatted description
+        if (block.items && block.items.length > 0) {
+          const itemsText = block.items.map(item => `• ${item}`).join('\n');
+          description = description ? `${description}\n\n${itemsText}` : itemsText;
+        }
+        
+        // Backend requires both title and description to be non-empty
+        return {
+          title: block.title || 'Untitled',
+          description: description || 'No description provided'
+        };
+      }).filter(block => block.title.trim() && block.description.trim());
+      
+      if (backendBlocks.length > 0) {
+        e.descriptionBlocks = backendBlocks;
+        console.log('📝 Converted description blocks:', backendBlocks);
+      }
+    }
+    
     return e;
   };
 
@@ -442,20 +507,27 @@ const Events: React.FC = () => {
       setIsImporting(true);
       setImportResults([]);
       const raws = parseImportJson(importJsonText);
+      
       if (!raws.length) {
         toast({ title: 'Nothing to import', description: 'No items found in the provided JSON.' });
+        setIsImporting(false);
         return;
       }
+      
       const results: Array<{ index: number; title?: string; success: boolean; id?: string; error?: string }> = [];
       for (let i = 0; i < raws.length; i++) {
         const raw = raws[i] as UnknownRecord;
+        
         try {
           const payload = normalizeImportedEvent(raw);
+          
           if (!payload.title) throw new Error('Missing required field: title');
           if (!payload.date) throw new Error('Missing required field: date');
           // Default status if absent
           payload.status = payload.status || 'DRAFT';
+          
           const created = await eventApi.create(payload);
+          
           results.push({ index: i, title: payload.title, success: true, id: created.id });
           setImportResults([...results]);
         } catch (err: unknown) {
@@ -465,12 +537,18 @@ const Events: React.FC = () => {
           setImportResults([...results]);
         }
       }
+      
       // Refresh list after import
       const data = await eventApi.getAll();
       setEvents(data.events || []);
-      toast({ title: 'Import complete', description: `${results.filter(r => r.success).length} succeeded, ${results.filter(r => !r.success).length} failed.` });
+      
+      const successCount = results.filter(r => r.success).length;
+      const failureCount = results.filter(r => !r.success).length;
+      
+      toast({ title: 'Import complete', description: `${successCount} succeeded, ${failureCount} failed.` });
     } catch (err: unknown) {
-      toast({ title: 'Import failed', description: getErrorMessage(err) || 'Could not import. Please check JSON and try again.', variant: 'destructive' });
+      const errorMsg = getErrorMessage(err);
+      toast({ title: 'Import failed', description: errorMsg || 'Could not import. Please check JSON and try again.', variant: 'destructive' });
     } finally {
       setIsImporting(false);
     }
@@ -724,6 +802,9 @@ const Events: React.FC = () => {
               <DialogTitle>
                 {isEditDialogOpen ? 'Edit Event' : 'Create New Event'}
               </DialogTitle>
+              <DialogDescription>
+                {isEditDialogOpen ? 'Update the event details below.' : 'Fill in the event details to create a new fitness event.'}
+              </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4">
@@ -853,6 +934,9 @@ const Events: React.FC = () => {
               <DialogTitle>
                 Event Responses - {selectedEvent?.title}
               </DialogTitle>
+              <DialogDescription>
+                View and manage all user registrations and responses for this event.
+              </DialogDescription>
             </DialogHeader>
             
             {eventResponses.length > 0 ? (
@@ -904,6 +988,9 @@ const Events: React.FC = () => {
           <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Import Events from JSON</DialogTitle>
+              <DialogDescription>
+                Upload a JSON file or paste JSON content to import events into the system. The JSON should contain an array of event objects or a single event object.
+              </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
@@ -956,6 +1043,8 @@ const Events: React.FC = () => {
               )}
             </div>
 
+
+
             <div className="flex gap-3 pt-4">
               <Button
                 variant="outline"
@@ -966,7 +1055,10 @@ const Events: React.FC = () => {
                 Close
               </Button>
               <Button
-                onClick={handleImport}
+                onClick={() => {
+                  console.log('🔘 Import button clicked!', { isImporting, textLength: importJsonText.length, hasText: !!importJsonText.trim() });
+                  handleImport();
+                }}
                 className="flex-1 bg-orange-500 hover:bg-orange-600"
                 disabled={isImporting || !importJsonText.trim()}
               >
